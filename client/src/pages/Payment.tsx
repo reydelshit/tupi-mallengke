@@ -18,6 +18,7 @@ import React, { useEffect, useState } from 'react';
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -179,162 +180,174 @@ const Payment = () => {
                         : 8000 * 12}
                     </span>
                   ) : (
-                    <span>{stall.current_balance}</span>
+                    <span>
+                      {(stall.lease_duration === '3 month'
+                        ? 8000 * 3
+                        : stall.lease_duration === '6 months'
+                        ? 8000 * 6
+                        : stall.lease_duration === '9 months'
+                        ? 8000 * 9
+                        : 8000 * 12) - stall.current_balance}
+                    </span>
                   )}
                 </TableCell>
 
                 <TableCell>
-                  <div>
-                    <Dialog>
-                      <DialogTrigger>
-                        {' '}
-                        <Button variant={'secondary'}>Renew</Button>
-                      </DialogTrigger>
-                      <DialogContent className="w-[40%]">
-                        <DialogHeader>
-                          <DialogTitle>
-                            Renew payment for business {stall.business_name}
-                          </DialogTitle>
-                          <DialogDescription>
-                            Owner Name: {stall.name}
-                          </DialogDescription>
-                        </DialogHeader>
+                  <Dialog>
+                    <DialogTrigger>
+                      {' '}
+                      <Button variant={'secondary'}>Renew</Button>
+                    </DialogTrigger>
+                    <DialogContent className="w-[40%]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          Renew payment for business {stall.business_name}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Owner Name: {stall.name}
+                        </DialogDescription>
+                      </DialogHeader>
 
-                        <div className="w-full">
-                          <Label>Lease Duration</Label>
-                          <Select
-                            onValueChange={(value) =>
-                              setSelectedLeaseDurationRenew(value)
-                            }
-                          >
-                            <SelectTrigger className="w-full h-[3rem]">
-                              <SelectValue placeholder="Select lease duration" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="3 months">3 months</SelectItem>
-                              <SelectItem value="6 months">6 months</SelectItem>
-                              <SelectItem value="9 months">9 months</SelectItem>
-                              <SelectItem value="1 year">1 year</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="w-full">
+                        <Label>Lease Duration</Label>
+                        <Select
+                          onValueChange={(value) =>
+                            setSelectedLeaseDurationRenew(value)
+                          }
+                        >
+                          <SelectTrigger className="w-full h-[3rem]">
+                            <SelectValue placeholder="Select lease duration" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="3 months">3 months</SelectItem>
+                            <SelectItem value="6 months">6 months</SelectItem>
+                            <SelectItem value="9 months">9 months</SelectItem>
+                            <SelectItem value="1 year">1 year</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                        <div className="w-full">
-                          <Label>Total Payment</Label>
-                          <Input
-                            className="h-[3rem] "
-                            type="number"
-                            name="total_payment"
-                            readOnly
-                            // onChange={(e) => setTotalPayment(+e.target.value)}
-                            value={
-                              selectedLeaseDurationRenew.length > 0
-                                ? selectedLeaseDurationRenew === '3 months'
-                                  ? 8000 * 3
-                                  : selectedLeaseDurationRenew === '6 months'
-                                  ? 8000 * 6
-                                  : selectedLeaseDurationRenew === '9 months'
-                                  ? 8000 * 9
-                                  : 8000 * 12
-                                : 0
-                            }
-                          />
+                      <div className="w-full">
+                        <Label>Total Payment</Label>
+                        <Input
+                          className="h-[3rem] "
+                          type="number"
+                          name="total_payment"
+                          readOnly
+                          // onChange={(e) => setTotalPayment(+e.target.value)}
+                          value={
+                            selectedLeaseDurationRenew.length > 0
+                              ? selectedLeaseDurationRenew === '3 months'
+                                ? 8000 * 3
+                                : selectedLeaseDurationRenew === '6 months'
+                                ? 8000 * 6
+                                : selectedLeaseDurationRenew === '9 months'
+                                ? 8000 * 9
+                                : 8000 * 12
+                              : 0
+                          }
+                        />
 
-                          <Button className="my-4">Submit</Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                        <Button className="my-4">Submit</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
 
-                    <Button variant={'secondary'}>Remove</Button>
+                  <Button variant={'secondary'}>Remove</Button>
 
-                    <Dialog
-                      // open={true}
-                      onOpenChange={(isOpen) => {
-                        setOpen(isOpen);
-                        if (!isOpen) {
-                          setTotalPayment(0);
-                        }
-                      }}
-                    >
-                      <DialogTrigger>
-                        <Button
-                          onClick={() => {
-                            // setOpen(true);
+                  <Dialog>
+                    <DialogTrigger>
+                      <Button
+                        onClick={() => {
+                          if (stall.lease_duration) {
                             setCurrentAmountBalance(
-                              stall.lease_duration.length > 0
-                                ? stall.lease_duration === '3 month'
+                              stall.lease_duration === '3 month'
+                                ? 8000 * 3
+                                : stall.lease_duration === '6 months'
+                                ? 8000 * 6
+                                : stall.lease_duration === '9 months'
+                                ? 8000 * 9
+                                : 8000 * 12,
+                            );
+                          } else {
+                            setCurrentAmountBalance(0);
+                          }
+
+                          setTenantID(stall.tenants_id);
+                        }}
+                        variant="secondary"
+                      >
+                        Pay
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="w-[40%]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          Pay for business {stall.business_name}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Owner Name: {stall.name}
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <form onSubmit={handleAddPayment}>
+                        <div className="w-full">
+                          <Label>Current Balance</Label>
+                          <span className="block">
+                            {stall.current_balance === null ? (
+                              <span className="font-bold text-xl">
+                                {stall.lease_duration === '3 month'
                                   ? 8000 * 3
                                   : stall.lease_duration === '6 months'
                                   ? 8000 * 6
                                   : stall.lease_duration === '9 months'
                                   ? 8000 * 9
-                                  : 8000 * 12
-                                : 0,
-                            );
+                                  : 8000 * 12}
+                              </span>
+                            ) : (
+                              <span className="font-bold text-xl">
+                                {stall.current_balance}
+                              </span>
+                            )}
+                          </span>
 
-                            setTenantID(stall.tenants_id);
-                          }}
-                          variant={'secondary'}
-                        >
-                          Pay
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="w-[40%]">
-                        <DialogHeader>
-                          <DialogTitle>
-                            Pay for business {stall.business_name}
-                          </DialogTitle>
-                          <DialogDescription>
-                            Owner Name: {stall.name}
-                          </DialogDescription>
-                        </DialogHeader>
+                          <Label>Enter Amount</Label>
+                          <Input
+                            className="h-[3rem]"
+                            type="number"
+                            name="enter_payment"
+                            onChange={(e) => {
+                              setTotalPayment(+e.target.value);
 
-                        <form onSubmit={handleAddPayment}>
-                          <div className="w-full">
-                            <Label>Current Balance</Label>
-                            <span className="block">
-                              {stall.current_balance === null ? (
-                                <span className="font-bold text-xl">
-                                  {stall.lease_duration === '3 month'
+                              console.log('Entered Payment:', e.target.value);
+                            }}
+                          />
+
+                          <Button
+                            disabled={
+                              stall.current_balance === null
+                                ? totalPayment >
+                                  (stall.lease_duration === '3 month'
                                     ? 8000 * 3
                                     : stall.lease_duration === '6 months'
                                     ? 8000 * 6
                                     : stall.lease_duration === '9 months'
                                     ? 8000 * 9
-                                    : 8000 * 12}
-                                </span>
-                              ) : (
-                                <span className="font-bold text-xl">
-                                  {stall.current_balance}
-                                </span>
-                              )}
-                            </span>
+                                    : 8000 * 12)
+                                : stall.current_balance - totalPayment < 0 ||
+                                  totalPayment === 0
+                            }
+                            type="submit"
+                            className="my-4"
+                          >
+                            Submit
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
 
-                            <Label>Enter Amount</Label>
-                            <Input
-                              className="h-[3rem] "
-                              type="number"
-                              name="enter_payment"
-                              onChange={(e) => setTotalPayment(+e.target.value)}
-                            />
-                            <Button
-                              disabled={
-                                stall.current_balance - totalPayment < 0 ||
-                                totalPayment === 0
-                              }
-                              onClick={() => setOpen(false)}
-                              type="submit"
-                              className="my-4"
-                            >
-                              Submit
-                            </Button>
-                          </div>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
-
-                    <Button variant={'secondary'}>Mark Overdue</Button>
-                  </div>
+                  <Button variant={'secondary'}>Mark Overdue</Button>
                 </TableCell>
               </TableRow>
             ))

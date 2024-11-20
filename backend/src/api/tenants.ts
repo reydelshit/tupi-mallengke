@@ -56,7 +56,8 @@ router.get('/payments', (req, res) => {
       ON tenants.tenants_id = latest_payment.tenants_id
       LEFT JOIN payments_log 
       ON payments_log.tenants_id = latest_payment.tenants_id 
-      AND payments_log.created_at = latest_payment.latest_payment_date;
+      AND payments_log.created_at = latest_payment.latest_payment_date GROUP BY 
+    tenants.tenants_id;
       `;
 
   databaseConnection.query(query, (err, data) => {
