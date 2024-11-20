@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { graveRouter } from '../api/grave';
-import { reservationRouter } from '../api/reservation';
+import { tenantRouter } from '../api/tenants';
+import { paymentLogRouter } from '../api/payment';
 
 const router = Router();
 
-router.use('/grave', graveRouter);
-router.use('/reservation', reservationRouter);
+router.use('/tenants', tenantRouter);
+router.use('/payments', paymentLogRouter);
 
 export default router;

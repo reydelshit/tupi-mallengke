@@ -1,15 +1,38 @@
 import DEFDEF from '@/components/DEFDEF';
 import { Button } from '@/components/ui/button';
-import { stallsGround, stallsSecond } from '@/data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { stallsGround, stallsSecond } from '@/data';
+import { Minus, PanelRightClose, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import DEFDEFSEC from '@/components/DEFDEFSEC';
+import PathLines from '@/components/PathLines';
+import PathLines2nd from '@/components/PathLines2nd';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { toast } from '@/hooks/use-toast';
+import { Label } from '@radix-ui/react-label';
+import axios from 'axios';
+import {
+  TransformComponent,
+  TransformWrapper,
+  useControls,
+} from 'react-zoom-pan-pinch';
+
 import {
   Dialog,
   DialogContent,
@@ -18,30 +41,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Minus, PanelRightClose, Plus } from 'lucide-react';
-import { useState } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-import {
-  TransformComponent,
-  TransformWrapper,
-  useControls,
-} from 'react-zoom-pan-pinch';
-import { Input } from '@/components/ui/input';
-import { Label } from '@radix-ui/react-label';
-import { Textarea } from '@/components/ui/textarea';
-import PathLines from '@/components/PathLines';
-import axios from 'axios';
-import { toast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
-import DEFDEFSEC from '@/components/DEFDEFSEC';
-import PathLines2nd from '@/components/PathLines2nd';
 
 type InputType =
   | React.ChangeEvent<HTMLInputElement>
@@ -91,7 +90,7 @@ const Controls = ({
 
 interface TenantsDataTypes {
   name: string;
-  birthday: string;
+  date_birth: string;
   gender: string;
   address: string;
   nationality: string;
@@ -100,6 +99,14 @@ interface TenantsDataTypes {
   business_name: string;
   business_type: string;
   lease_duration: string;
+}
+
+interface StallsTypes extends TenantsDataTypes {
+  signed_lease_path: string;
+  id_proof_path: string;
+  payment_status: string;
+  stall_no: string;
+  created_at: string;
 }
 const Dashboard = () => {
   const [selectedStalls, setSelectedStalls] = useState('');
@@ -110,6 +117,28 @@ const Dashboard = () => {
   const [imageFileLease, setImageFileLease] = useState<File | null>(null);
   const [imageLease, setImageLease] = useState<string | null>(null);
   const [showSecondFloor, setShowSecondFloor] = useState(false);
+  const [selectedGender, setSelectedGender] = useState('');
+  const [selectedLeaseDuration, setSelectedLeaseDuration] = useState('');
+  const [totalPayment, setTotalPayment] = useState(0);
+  const [stalls, setStalls] = useState<StallsTypes[]>([]);
+  // const [showMoredetails, setShowMoreDetails] = useState(false);
+
+  const fetchStalls = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_SERVER_LINK}/api/tenants`,
+      );
+
+      console.log(res.data, 'stalls');
+      setStalls(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStalls();
+  }, []);
 
   const handleInput = (e: InputType) => {
     setTenantData({
@@ -121,28 +150,36 @@ const Dashboard = () => {
   const handleAddTenant = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    console.log(tenantData);
+
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_SERVER_LINK}/api/reservation/create`,
+        `${import.meta.env.VITE_SERVER_LINK}/api/tenants/create`,
         {
-          stall_no: selectedStalls,
           ...tenantData,
+          stall_no: selectedStalls,
+          gender: selectedGender,
+          id_proof_path: imageFileID,
+          signed_lease_path: imageFileLease,
+          lease_duration: selectedLeaseDuration,
         },
 
         {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data',
           },
         },
       );
+
+      console.log(res.data);
 
       if (res.data.status === 'success') {
         console.log(res.data);
         setShowModal(false);
 
         toast({
-          title: 'Reservation Successful',
-          description: 'You have successfully reserved a plot',
+          title: 'Tenant Added Successful',
+          description: 'You have successfully added a tenant',
         });
       }
     } catch (err) {
@@ -212,8 +249,8 @@ const Dashboard = () => {
                     }}
                     fill="#00bf63"
                     d={stall.d}
-                    fill-opacity="1"
-                    fill-rule="nonzero"
+                    fillOpacity="1"
+                    fillRule="nonzero"
                   />
                 ))}
 
@@ -252,8 +289,8 @@ const Dashboard = () => {
                     }}
                     fill="#00bf63"
                     d={stall.d}
-                    fill-opacity="1"
-                    fill-rule="nonzero"
+                    fillOpacity="1"
+                    fillRule="nonzero"
                   />
                 ))}
 
@@ -296,22 +333,145 @@ const Dashboard = () => {
       </div>
 
       <Table>
-        <TableCaption>A list of your recent invoices.</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Invoice</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Method</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
+            <TableHead>Owner Name</TableHead>
+            <TableHead>Business Type</TableHead>
+            <TableHead>Stall Number</TableHead>
+            <TableHead>Payment Status</TableHead>
+            <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow>
-            <TableCell className="font-medium">INV001</TableCell>
-            <TableCell>Paid</TableCell>
-            <TableCell>Credit Card</TableCell>
-            <TableCell className="text-right">$250.00</TableCell>
-          </TableRow>
+          {Array.isArray(stalls) && stalls.length > 0 ? (
+            stalls.map((stall, index) => (
+              <TableRow key={index}>
+                <TableCell>{stall.name}</TableCell>
+                <TableCell>{stall.business_type}</TableCell>
+                <TableCell>{stall.stall_no}</TableCell>
+                <TableCell>payment type</TableCell>
+                <TableCell>
+                  <Dialog>
+                    <DialogTrigger>View</DialogTrigger>
+                    <DialogContent className="w-[40%]">
+                      <DialogHeader>
+                        <DialogTitle>{stall.business_name}</DialogTitle>
+                        <DialogDescription>
+                          {stall.name} is a business owner of{' '}
+                          {stall.business_type} and has a stall number of{' '}
+                          {stall.stall_no}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div>
+                        <Label>Owner</Label>
+                        <h1>{stall.name}</h1>
+                      </div>
+
+                      <div>
+                        <Label>Date of Birth</Label>
+                        <h1>{stall.date_birth}</h1>
+                      </div>
+
+                      <div>
+                        <Label>Gender</Label>
+                        <h1>{stall.gender}</h1>
+                      </div>
+
+                      <div>
+                        <Label>Address</Label>
+                        <h1>{stall.address}</h1>
+                      </div>
+
+                      <div>
+                        <Label>Nationality</Label>
+                        <h1>{stall.nationality}</h1>
+                      </div>
+
+                      <div>
+                        <div>
+                          <Label>Business Type</Label>
+                          <h1>{stall.business_type}</h1>
+                        </div>
+
+                        <div>
+                          <Label>Contact Information</Label>
+                          <h1>{stall.phone}</h1>
+                          <h1>{stall.email}</h1>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>Rental Info</Label>
+                        <h1>{stall.lease_duration}</h1>
+                      </div>
+                      <div>
+                        <Label>Expiration</Label>
+                        <h1>
+                          {(() => {
+                            const createdDate = new Date(stall.created_at);
+
+                            switch (stall.lease_duration) {
+                              case '1 month':
+                                createdDate.setMonth(
+                                  createdDate.getMonth() + 1,
+                                );
+                                break;
+                              case '3 months':
+                                createdDate.setMonth(
+                                  createdDate.getMonth() + 3,
+                                );
+                                break;
+                              case '6 months':
+                                createdDate.setMonth(
+                                  createdDate.getMonth() + 6,
+                                );
+                                break;
+                              case '1 year':
+                              default:
+                                createdDate.setFullYear(
+                                  createdDate.getFullYear() + 1,
+                                );
+                                break;
+                            }
+
+                            return createdDate.toLocaleDateString();
+                          })()}
+                        </h1>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <div>
+                          <Label>Signed Lease Agreement</Label>
+                          <img
+                            className="w-40 h-40 object-cover"
+                            src={`${import.meta.env.VITE_SERVER_LINK}/api/${
+                              stall.signed_lease_path
+                            }`}
+                            alt="signed lease"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>ID Proof</Label>
+                          <img
+                            className="w-40 h-40 object-cover"
+                            src={`${import.meta.env.VITE_SERVER_LINK}/api/${
+                              stall.id_proof_path
+                            }`}
+                            alt="ID Proof"
+                          />
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5}>No data available</TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
 
@@ -340,7 +500,7 @@ const Dashboard = () => {
                   <div>
                     <Label>Name</Label>
                     <Input
-                      className="h-[3rem] rounded-full "
+                      className="h-[3rem] rounded-lg"
                       type="text"
                       name="name"
                       onChange={handleInput}
@@ -355,8 +515,8 @@ const Dashboard = () => {
                         className="h-[3rem] rounded-full"
                         type="date"
                         id="date"
-                        name="birthday"
-                        value={tenantData.birthday}
+                        name="date_birth"
+                        value={tenantData.date_birth}
                         onChange={handleInput}
                         required
                       />
@@ -365,7 +525,9 @@ const Dashboard = () => {
                     <div className="w-full">
                       <Label htmlFor="date">Gender</Label>
 
-                      <Select>
+                      <Select
+                        onValueChange={(value) => setSelectedGender(value)}
+                      >
                         <SelectTrigger className="w-full h-[3rem]">
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
@@ -377,9 +539,18 @@ const Dashboard = () => {
                     </div>
                   </div>
 
+                  <Label>Address</Label>
+                  <Input
+                    className="h-[3rem] rounded-lg"
+                    type="text"
+                    name="address"
+                    onChange={handleInput}
+                    value={tenantData.address}
+                  />
+
                   <Label>Nationality</Label>
                   <Input
-                    className="h-[3rem] rounded-full "
+                    className="h-[3rem] rounded-lg"
                     type="text"
                     name="nationality"
                     onChange={handleInput}
@@ -391,7 +562,7 @@ const Dashboard = () => {
                     <div className="flex gap-4">
                       <Input
                         placeholder="Phone Number"
-                        className="h-[3rem] rounded-full "
+                        className="h-[3rem] rounded-lg"
                         type="number"
                         name="phone"
                         onChange={handleInput}
@@ -400,7 +571,7 @@ const Dashboard = () => {
 
                       <Input
                         placeholder="Email"
-                        className="h-[3rem] rounded-full "
+                        className="h-[3rem] rounded-lg"
                         type="email"
                         name="email"
                         onChange={handleInput}
@@ -417,7 +588,7 @@ const Dashboard = () => {
                     <div className="w-full">
                       <Label>Business Name</Label>
                       <Input
-                        className="h-[3rem] rounded-full "
+                        className="h-[3rem] rounded-lg"
                         type="text"
                         name="business_name"
                         onChange={handleInput}
@@ -428,7 +599,7 @@ const Dashboard = () => {
                     <div className="w-full">
                       <Label>Business Type</Label>
                       <Input
-                        className="h-[3rem] rounded-full "
+                        className="h-[3rem] rounded-lg"
                         type="text"
                         name="business_type"
                         onChange={handleInput}
@@ -437,20 +608,50 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  <Label>Rental Info</Label>
+                  <Label className="block">Rental Info</Label>
 
-                  <Label>Lease Duration</Label>
-                  <Select>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select lease duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1 month">1 month</SelectItem>
-                      <SelectItem value="3 months">3 months</SelectItem>
-                      <SelectItem value="6 months">6 months</SelectItem>
-                      <SelectItem value="1 year">1 year</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex w-full gap-4">
+                    <div className="w-full">
+                      <Label>Lease Duration</Label>
+                      <Select
+                        onValueChange={(value) =>
+                          setSelectedLeaseDuration(value)
+                        }
+                      >
+                        <SelectTrigger className="w-full h-[3rem]">
+                          <SelectValue placeholder="Select lease duration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3 months">3 months</SelectItem>
+                          <SelectItem value="6 months">6 months</SelectItem>
+                          <SelectItem value="9 months">9 months</SelectItem>
+                          <SelectItem value="1 year">1 year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="w-full">
+                      <Label>Total Payment</Label>
+                      <Input
+                        className="h-[3rem] "
+                        type="number"
+                        name="total_payment"
+                        readOnly
+                        // onChange={(e) => setTotalPayment(+e.target.value)}
+                        value={
+                          selectedLeaseDuration.length > 0
+                            ? selectedLeaseDuration === '3 month'
+                              ? 8000 * 3
+                              : selectedLeaseDuration === '6 months'
+                              ? 8000 * 6
+                              : selectedLeaseDuration === '9 months'
+                              ? 8000 * 9
+                              : 8000 * 12
+                            : 0
+                        }
+                      />
+                    </div>
+                  </div>
 
                   <Label>Additional Information</Label>
 
@@ -461,7 +662,7 @@ const Dashboard = () => {
                         type="file"
                         accept="image/*"
                         onChange={handleChangeImageID}
-                        className="cursor-pointer"
+                        className="cursor-pointer h-[3rem]"
                         required
                       />
                     </div>
@@ -472,16 +673,16 @@ const Dashboard = () => {
                         type="file"
                         accept="image/*"
                         onChange={handleChangeImageLease}
-                        className="cursor-pointer"
+                        className="cursor-pointer h-[3rem]"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="flex justify-end w-full">
+                  <div className="flex justify-end w-full my-4">
                     <Button
                       // disabled={plotLength >= 5 ? true : false}
-                      className="bg-white text-black h-[3rem] w-fit rounded-full my-4"
+                      className="bg-white text-black h-[3rem] w-fit rounded-lgmy-4"
                       type="submit"
                     >
                       Reserve Now
