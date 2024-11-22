@@ -1,12 +1,5 @@
 import { Button } from '@/components/ui/button';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableBody,
   TableCell,
@@ -14,56 +7,36 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
-import { Label } from '@radix-ui/react-label';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+import MarkOverdueDialog from '@/components/payments/MarkOverdueDialog';
+import PayDialog from '@/components/payments/PayDialog';
+import RemoveDialog from '@/components/payments/RemoveDialog';
+import RenewDialog from '@/components/payments/RenewDialog';
+import SendSMSDialog from '@/components/payments/SendSMSDialog';
 import axios from 'axios';
 import moment from 'moment';
-
-interface TenantsDataTypes {
-  name: string;
-  date_birth: string;
-  gender: string;
-  address: string;
-  nationality: string;
-  phone: string;
-  email?: string;
-  business_name: string;
-  business_type: string;
-  lease_duration: string;
-}
-
-interface StallsTypes extends TenantsDataTypes {
-  signed_lease_path: string;
-  id_proof_path: string;
-  payment_status: string;
-  stall_no: string;
-  created_at: string;
-  tenants_id: number;
-  current_balance: number;
-}
+import usePagination from '@/hooks/usePagination';
+import { Input } from '@/components/ui/input';
+import PaginationTemplate from '@/components/Pagination';
+import { ExportToPDF } from '@/components/ExportToPDF';
+import { StallsTypes } from '@/types';
+import { History, SendHorizontal } from 'lucide-react';
+import ViewDialog from '@/components/ViewDialog';
 
 const Payment = () => {
   const [stalls, setStalls] = useState<StallsTypes[]>([]);
-  const [selectedLeaseDurationRenew, setSelectedLeaseDurationRenew] =
-    useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const [totalPayment, setTotalPayment] = useState<number>(0);
-  const [currentAmountBalance, setCurrentAmountBalance] = useState<number>(0);
-  const [tenantID, setTenantID] = useState<number>(0);
-
-  const [open, setOpen] = useState(false);
   const fetchStalls = async () => {
     try {
       const res = await axios.get(
@@ -81,49 +54,98 @@ const Payment = () => {
     fetchStalls();
   }, []);
 
-  const handleAddPayment = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_SERVER_LINK}/api/payments/create`,
-        {
-          current_balance: currentAmountBalance - totalPayment,
-          amount_pay: totalPayment,
-          tenants_id: tenantID,
-        },
-      );
+  const filteredSTenatns = stalls.filter(
+    (stall) =>
+      stall.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stall.business_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stall.stall_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stall.payment_status.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
-      toast({
-        title: 'Payment added successfully',
-        description: 'You have successfully added a payment',
-      });
-
-      fetchStalls();
-
-      console.log(res.data, 'stalls');
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  const { currentItems, totalPages, currentPage, handlePageChange } =
+    usePagination({
+      itemsPerPage: 10,
+      data: filteredSTenatns,
+    });
 
   return (
-    <div>
+    <div className="my-[2rem]">
+      <h1 className="text-8xl text-start mb-[5rem] font-bold italic">
+        PAYMENT
+      </h1>
+
+      <div className="flex justify-between w-full h-[3rem] my-4">
+        <h1 className="text-start font-semibold text-2xl">LIST OF PAYMENTS </h1>
+
+        <div className="flex  justify-end w-fit gap-4 mx-[2rem]">
+          <Input
+            className="w-[400px] bg-white h-full"
+            placeholder="Search"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          <ExportToPDF
+            data={stalls.map((stall) => {
+              return {
+                'Tenants ID': stall.tenants_id,
+                'Owner Name': stall.name,
+                Start: moment(stall.created_at).format('LL'),
+                Expiration: (() => {
+                  const createdDate = new Date(stall.created_at);
+
+                  switch (stall.lease_duration) {
+                    case '1 month':
+                      createdDate.setMonth(createdDate.getMonth() + 1);
+                      break;
+                    case '3 months':
+                      createdDate.setMonth(createdDate.getMonth() + 3);
+                      break;
+                    case '6 months':
+                      createdDate.setMonth(createdDate.getMonth() + 6);
+                      break;
+                    case '1 year':
+                    default:
+                      createdDate.setFullYear(createdDate.getFullYear() + 1);
+                      break;
+                  }
+
+                  return createdDate.toLocaleDateString();
+                })(),
+                Duration: stall.lease_duration,
+                'Total Payments': stall.total_amount,
+                'Total Amount to Pay':
+                  stall.total_amount_to_pay === 0
+                    ? 'PAID - Open for renewal'
+                    : stall.total_amount_to_pay,
+                'Current Payments': stall.current_total_payments,
+                'Payment Status': stall.payment_status,
+              };
+            })}
+            fileName="List_payments"
+          />
+        </div>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Tenants ID</TableHead>
             <TableHead>Owner Name</TableHead>
             <TableHead>Start</TableHead>
             <TableHead>Expiration</TableHead>
             <TableHead>Duration</TableHead>
-            <TableHead>Total Amount</TableHead>
-            <TableHead>Current Balance</TableHead>
-            <TableHead>Action</TableHead>
+            <TableHead>Total Payments</TableHead>
+            <TableHead>Total Amount to Pay</TableHead>
+            <TableHead>Current Payments</TableHead>
+            <TableHead>Payment Status</TableHead>
+            <TableHead className="text-center">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {Array.isArray(stalls) && stalls.length > 0 ? (
-            stalls.map((stall, index) => (
+            currentItems.map((stall, index) => (
               <TableRow key={index}>
+                <TableCell>{stall.tenants_id}</TableCell>
+
                 <TableCell>{stall.name}</TableCell>
                 <TableCell>{moment(stall.created_at).format('LL')}</TableCell>
                 <TableCell>
@@ -155,209 +177,119 @@ const Payment = () => {
                 </TableCell>
 
                 <TableCell>{stall.lease_duration}</TableCell>
-
                 <TableCell>
-                  {stall.lease_duration.length > 0
-                    ? stall.lease_duration === '3 month'
-                      ? 8000 * 3
-                      : stall.lease_duration === '6 months'
-                      ? 8000 * 6
-                      : stall.lease_duration === '9 months'
-                      ? 8000 * 9
-                      : 8000 * 12
-                    : 0}
+                  <span className="border-b-4 border-yellow-500 font-bold p-2">
+                    ₱{stall.total_amount}
+                  </span>
                 </TableCell>
 
                 <TableCell>
-                  {stall.current_balance === null ? (
-                    <span>
-                      {stall.lease_duration === '3 month'
-                        ? 8000 * 3
-                        : stall.lease_duration === '6 months'
-                        ? 8000 * 6
-                        : stall.lease_duration === '9 months'
-                        ? 8000 * 9
-                        : 8000 * 12}
+                  <span className="border-b-4 border-red-500 font-bold p-2">
+                    ₱{' '}
+                    {stall.total_amount_to_pay === 0
+                      ? 'PAID - Open for renewal'
+                      : stall.total_amount_to_pay}
+                  </span>
+                </TableCell>
+
+                <TableCell>
+                  {' '}
+                  <span className="border-b-4 border-green-500 font-bold p-2">
+                    ₱{stall.current_total_payments}
+                  </span>
+                </TableCell>
+
+                <TableCell>
+                  {stall.payment_status.toLowerCase() === 'unpaid' ? (
+                    <span className="bg-yellow-500 text-white p-2 rounded-sm">
+                      {stall.payment_status}
+                    </span>
+                  ) : stall.payment_status.toLowerCase() === 'overdue' ? (
+                    <span className="bg-red-500 text-white p-2 rounded-sm">
+                      {stall.payment_status}
+                    </span>
+                  ) : stall.total_amount_to_pay === 0 ? (
+                    <span className="bg-green-500 text-white p-2 rounded-sm">
+                      Paid
                     </span>
                   ) : (
-                    <span>
-                      {(stall.lease_duration === '3 month'
-                        ? 8000 * 3
-                        : stall.lease_duration === '6 months'
-                        ? 8000 * 6
-                        : stall.lease_duration === '9 months'
-                        ? 8000 * 9
-                        : 8000 * 12) - stall.current_balance}
+                    <span className="bg-blue-500 text-white p-2 rounded-sm">
+                      {stall.payment_status}
                     </span>
                   )}
                 </TableCell>
 
-                <TableCell>
-                  <Dialog>
-                    <DialogTrigger>
-                      {' '}
-                      <Button variant={'secondary'}>Renew</Button>
-                    </DialogTrigger>
-                    <DialogContent className="w-[40%]">
-                      <DialogHeader>
-                        <DialogTitle>
-                          Renew payment for business {stall.business_name}
-                        </DialogTitle>
-                        <DialogDescription>
-                          Owner Name: {stall.name}
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <div className="w-full">
-                        <Label>Lease Duration</Label>
-                        <Select
-                          onValueChange={(value) =>
-                            setSelectedLeaseDurationRenew(value)
-                          }
-                        >
-                          <SelectTrigger className="w-full h-[3rem]">
-                            <SelectValue placeholder="Select lease duration" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="3 months">3 months</SelectItem>
-                            <SelectItem value="6 months">6 months</SelectItem>
-                            <SelectItem value="9 months">9 months</SelectItem>
-                            <SelectItem value="1 year">1 year</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="w-full">
-                        <Label>Total Payment</Label>
-                        <Input
-                          className="h-[3rem] "
-                          type="number"
-                          name="total_payment"
-                          readOnly
-                          // onChange={(e) => setTotalPayment(+e.target.value)}
-                          value={
-                            selectedLeaseDurationRenew.length > 0
-                              ? selectedLeaseDurationRenew === '3 months'
-                                ? 8000 * 3
-                                : selectedLeaseDurationRenew === '6 months'
-                                ? 8000 * 6
-                                : selectedLeaseDurationRenew === '9 months'
-                                ? 8000 * 9
-                                : 8000 * 12
-                              : 0
-                          }
+                <TableCell className="flex gap-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      <Button>Actions</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <PayDialog stall={stall} fetchStalls={fetchStalls} />
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <RenewDialog stall={stall} fetchStalls={fetchStalls} />
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <MarkOverdueDialog
+                          stall={stall}
+                          fetchStalls={fetchStalls}
                         />
+                      </DropdownMenuItem>
+                      {/* <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <RemoveDialog />
+                      </DropdownMenuItem> */}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                        <Button className="my-4">Submit</Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <SendSMSDialog stall={stall} />
 
-                  <Button variant={'secondary'}>Remove</Button>
-
-                  <Dialog>
-                    <DialogTrigger>
-                      <Button
-                        onClick={() => {
-                          if (stall.lease_duration) {
-                            setCurrentAmountBalance(
-                              stall.lease_duration === '3 month'
-                                ? 8000 * 3
-                                : stall.lease_duration === '6 months'
-                                ? 8000 * 6
-                                : stall.lease_duration === '9 months'
-                                ? 8000 * 9
-                                : 8000 * 12,
-                            );
-                          } else {
-                            setCurrentAmountBalance(0);
-                          }
-
-                          setTenantID(stall.tenants_id);
-                        }}
-                        variant="secondary"
-                      >
-                        Pay
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="w-[40%]">
-                      <DialogHeader>
-                        <DialogTitle>
-                          Pay for business {stall.business_name}
-                        </DialogTitle>
-                        <DialogDescription>
-                          Owner Name: {stall.name}
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <form onSubmit={handleAddPayment}>
-                        <div className="w-full">
-                          <Label>Current Balance</Label>
-                          <span className="block">
-                            {stall.current_balance === null ? (
-                              <span className="font-bold text-xl">
-                                {stall.lease_duration === '3 month'
-                                  ? 8000 * 3
-                                  : stall.lease_duration === '6 months'
-                                  ? 8000 * 6
-                                  : stall.lease_duration === '9 months'
-                                  ? 8000 * 9
-                                  : 8000 * 12}
-                              </span>
-                            ) : (
-                              <span className="font-bold text-xl">
-                                {stall.current_balance}
-                              </span>
-                            )}
-                          </span>
-
-                          <Label>Enter Amount</Label>
-                          <Input
-                            className="h-[3rem]"
-                            type="number"
-                            name="enter_payment"
-                            onChange={(e) => {
-                              setTotalPayment(+e.target.value);
-
-                              console.log('Entered Payment:', e.target.value);
-                            }}
-                          />
-
-                          <Button
-                            disabled={
-                              stall.current_balance === null
-                                ? totalPayment >
-                                  (stall.lease_duration === '3 month'
-                                    ? 8000 * 3
-                                    : stall.lease_duration === '6 months'
-                                    ? 8000 * 6
-                                    : stall.lease_duration === '9 months'
-                                    ? 8000 * 9
-                                    : 8000 * 12)
-                                : stall.current_balance - totalPayment < 0 ||
-                                  totalPayment === 0
-                            }
-                            type="submit"
-                            className="my-4"
-                          >
-                            Submit
-                          </Button>
-                        </div>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Button variant={'secondary'}>Mark Overdue</Button>
+                  <ViewDialog stall={stall} />
                 </TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5}>No data available</TableCell>
+              <TableCell colSpan={8}>No data available</TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      <PaginationTemplate
+        totalPages={totalPages}
+        currentPage={currentPage}
+        handlePageChange={handlePageChange}
+      />
+
+      <div className="fixed top-5 right-5 flex flex-col gap-2 p-4 rounded-lg w-fit">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-blue-500 rounded"></div>
+          <span className="text-sm text-gray-600">Ongoing</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-green-400 rounded"></div>
+          <span className="text-sm text-gray-600">Paid</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-red-500 rounded"></div>
+          <span className="text-sm text-gray-600">Overdue</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-yellow-500 rounded"></div>
+          <span className="text-sm text-gray-600">Unpaid</span>
+        </div>
+      </div>
     </div>
   );
 };

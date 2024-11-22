@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
 
 // Get a specific payment log by ID
 router.get('/:id', (req, res) => {
-  const query = 'SELECT * FROM payments_log WHERE payment_id = ?';
+  const query = 'SELECT * FROM payments_log WHERE tenants_id = ?';
   const id = req.params.id;
 
   databaseConnection.query(query, [id], (err, data) => {
@@ -50,6 +50,22 @@ router.post('/create', (req, res) => {
       console.error('Database error:', err);
       return res.status(500).json({ error: 'Failed to create payment log' });
     }
+
+    const updatePaymentStatusQuery = `UPDATE tenants SET payment_status = ? WHERE tenants_id = ?`;
+    const updatePaymentStatusValues = ['On Going', req.body.tenants_id];
+
+    databaseConnection.query(
+      updatePaymentStatusQuery,
+      updatePaymentStatusValues,
+      (err) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res
+            .status(500)
+            .json({ error: 'Failed to update payment status' });
+        }
+      },
+    );
 
     return res.json({
       ...data,

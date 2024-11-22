@@ -6,14 +6,14 @@ const AdminRoot = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  // const isLoginTupiMapping = localStorage.getItem('isLoginTupiMapping');
-  const isLoginTupiMapping = true;
+  const isLoginMallengke = localStorage.getItem('isLoginMallengke');
+  // const isLoginMallengke = true;
 
   useEffect(() => {
-    if (!isLoginTupiMapping) {
+    if (!isLoginMallengke) {
       navigate('/login');
     }
-  }, [isLoginTupiMapping, navigate]);
+  }, [isLoginMallengke, navigate]);
 
   return <App />;
 };

@@ -25,7 +25,7 @@ const PaginationTemplate = ({
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
-              className="cursor-pointer text-[#FDF3C0]"
+              className="cursor-pointer "
               onClick={() =>
                 currentPage === 1
                   ? handlePageChange(totalPages)
@@ -57,7 +57,7 @@ const PaginationTemplate = ({
           </PaginationItem>
           <PaginationItem>
             <PaginationNext
-              className="text-[#FDF3C0]"
+              className=""
               href="#"
               onClick={() =>
                 currentPage === totalPages

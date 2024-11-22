@@ -33,14 +33,11 @@ import {
   useControls,
 } from 'react-zoom-pan-pinch';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import PaginationTemplate from '@/components/Pagination';
+import PathContainer from '@/components/PathContainer';
+import ViewDialog from '@/components/ViewDialog';
+import usePagination from '@/hooks/usePagination';
+import { StallsTypes, TenantsDataTypes } from '@/types';
 
 type InputType =
   | React.ChangeEvent<HTMLInputElement>
@@ -88,26 +85,6 @@ const Controls = ({
   );
 };
 
-interface TenantsDataTypes {
-  name: string;
-  date_birth: string;
-  gender: string;
-  address: string;
-  nationality: string;
-  phone: string;
-  email?: string;
-  business_name: string;
-  business_type: string;
-  lease_duration: string;
-}
-
-interface StallsTypes extends TenantsDataTypes {
-  signed_lease_path: string;
-  id_proof_path: string;
-  payment_status: string;
-  stall_no: string;
-  created_at: string;
-}
 const Dashboard = () => {
   const [selectedStalls, setSelectedStalls] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -119,14 +96,28 @@ const Dashboard = () => {
   const [showSecondFloor, setShowSecondFloor] = useState(false);
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedLeaseDuration, setSelectedLeaseDuration] = useState('');
-  const [totalPayment, setTotalPayment] = useState(0);
+
   const [stalls, setStalls] = useState<StallsTypes[]>([]);
   // const [showMoredetails, setShowMoreDetails] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // const fetchStalls = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `${import.meta.env.VITE_SERVER_LINK}/api/tenants`,
+  //     );
+
+  //     console.log(res.data, 'stalls');
+  //     setStalls(res.data);
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // };
 
   const fetchStalls = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_SERVER_LINK}/api/tenants`,
+        `${import.meta.env.VITE_SERVER_LINK}/api/tenants/payments`,
       );
 
       console.log(res.data, 'stalls');
@@ -139,6 +130,20 @@ const Dashboard = () => {
   useEffect(() => {
     fetchStalls();
   }, []);
+
+  const filteredSTenatns = stalls.filter(
+    (stall) =>
+      stall.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stall.business_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stall.stall_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stall.payment_status.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const { currentItems, totalPages, currentPage, handlePageChange } =
+    usePagination({
+      itemsPerPage: 10,
+      data: filteredSTenatns,
+    });
 
   const handleInput = (e: InputType) => {
     setTenantData({
@@ -176,6 +181,8 @@ const Dashboard = () => {
       if (res.data.status === 'success') {
         console.log(res.data);
         setShowModal(false);
+
+        fetchStalls();
 
         toast({
           title: 'Tenant Added Successful',
@@ -220,83 +227,119 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="relative w-[100%] h-[70%] grid place-content-center place-items-center  overflow-hidden bg-transparent">
-        {showSecondFloor ? (
-          <TransformWrapper initialScale={1} minScale={0.5} maxScale={4}>
-            <TransformComponent
-              wrapperClass="w-fit h-fit"
-              contentClass="w-fit h-fit"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                xmlnsXlink="http://www.w3.org/1999/xlink"
-                width="1080"
-                zoomAndPan="magnify"
-                viewBox="0 0 810 809.999993"
-                height="1080"
-                preserveAspectRatio="xMidYMid meet"
-                version="1.0"
+    <div className="h-full w-full relative my-[2rem]">
+      <h1 className="text-8xl text-start font-bold italic">DASHBOARD</h1>
+      <div className="h-screen flex items-center justify-center gap-8 relative">
+        <div className="mb-[rem] absolute left-5 top-[5rem] text-2xl font-bold">
+          {showSecondFloor ? <h1>Second Floor</h1> : <h1>Ground Floor</h1>}
+        </div>
+        <div className="relative w-[70%]  h-[700px] grid place-content-center place-items-center overflow-hidden bg-transparent">
+          {showSecondFloor ? (
+            <TransformWrapper initialScale={1} minScale={0.5} maxScale={4}>
+              <TransformComponent
+                wrapperClass="w-fit h-fit"
+                contentClass="w-fit h-fit"
               >
-                <DEFDEFSEC />
-                {stallsSecond.map((stall, index) => (
-                  <path
-                    key={index}
-                    onClick={() => {
-                      console.log(stall.id);
-                      setSelectedStalls(stall.id);
-                      setShowModal(true);
-                    }}
-                    fill="#00bf63"
-                    d={stall.d}
-                    fillOpacity="1"
-                    fillRule="nonzero"
-                  />
-                ))}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                  width="1080"
+                  zoomAndPan="magnify"
+                  viewBox="0 0 810 809.999993"
+                  height="1080"
+                  preserveAspectRatio="xMidYMid meet"
+                  version="1.0"
+                >
+                  <DEFDEFSEC />
+                  {stallsSecond.map((stall, index) => {
+                    let fillColor = '#22c55e'; // Default to blue (occupied)
 
-                <PathLines2nd />
-              </svg>
-            </TransformComponent>
-            <Controls
-              showSecondFloor={showSecondFloor}
-              setShowSecondFloor={setShowSecondFloor}
-            />
-          </TransformWrapper>
-        ) : (
-          <TransformWrapper initialScale={1} minScale={0.5} maxScale={4}>
-            <TransformComponent
-              wrapperClass="w-fit h-fit"
-              contentClass="w-fit h-fit"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                xmlnsXlink="http://www.w3.org/1999/xlink"
-                width="1080"
-                zoomAndPan="magnify"
-                viewBox="0 0 810 809.999993"
-                height="1080"
-                preserveAspectRatio="xMidYMid meet"
-                version="1.0"
+                    const stallData = stalls.find(
+                      (s) => String(s.stall_no) === String(stall.id),
+                    );
+
+                    if (stallData) {
+                      if (stallData.payment_status === 'Overdue') {
+                        fillColor = '#ef4444'; // Red (overdue)
+                      } else {
+                        fillColor = '#3b82f6 '; // Green (available)
+                      }
+                    }
+
+                    return (
+                      <PathContainer
+                        key={index}
+                        onClick={() => {
+                          console.log(stall.id);
+                          setSelectedStalls(stall.id);
+                          setShowModal(true);
+                        }}
+                        id={stall.id}
+                        d={stall.d}
+                        fillColor={fillColor} // Pass the fillColor as a prop
+                      />
+                    );
+                  })}
+
+                  <PathLines2nd />
+                </svg>
+              </TransformComponent>
+              <Controls
+                showSecondFloor={showSecondFloor}
+                setShowSecondFloor={setShowSecondFloor}
+              />
+            </TransformWrapper>
+          ) : (
+            <TransformWrapper initialScale={1} minScale={0.5} maxScale={4}>
+              <TransformComponent
+                wrapperClass="w-fit h-fit"
+                contentClass="w-fit h-fit"
               >
-                <DEFDEF />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                  width="1080"
+                  zoomAndPan="magnify"
+                  viewBox="0 0 810 809.999993"
+                  height="1080"
+                  preserveAspectRatio="xMidYMid meet"
+                  version="1.0"
+                >
+                  <DEFDEF />
 
-                {stallsGround.map((stall, index) => (
-                  <path
-                    key={index}
-                    onClick={() => {
-                      setSelectedStalls(stall.id);
-                      setShowModal(true);
-                    }}
-                    fill="#00bf63"
-                    d={stall.d}
-                    fillOpacity="1"
-                    fillRule="nonzero"
-                  />
-                ))}
+                  {stallsGround.map((stall, index) => {
+                    let fillColor = '#22c55e'; // Default to blue (occupied)
 
-                <PathLines />
-              </svg>
-              {/* 
+                    const stallData = stalls.find(
+                      (s) => String(s.stall_no) === String(stall.id),
+                    );
+
+                    if (stallData) {
+                      if (stallData.payment_status === 'Overdue') {
+                        fillColor = '#ef4444'; // Red (overdue)
+                      } else {
+                        fillColor = '#3b82f6 '; // Green (available)
+                      }
+                    }
+
+                    return (
+                      <PathContainer
+                        key={index}
+                        onClick={() => {
+                          console.log(stall.id);
+                          setSelectedStalls(stall.id);
+                          setShowModal(true);
+                        }}
+                        id={stall.id}
+                        d={stall.d}
+                        fillColor={fillColor} // Pass the fillColor as a prop
+                      />
+                    );
+                  })}
+
+                  <PathLines />
+                </svg>
+                {/* 
               <svg
                 className="rotate-[270deg]"
                 width="297mm"
@@ -323,157 +366,84 @@ const Dashboard = () => {
                   ))}
                 </g>
               </svg> */}
-            </TransformComponent>
-            <Controls
-              showSecondFloor={showSecondFloor}
-              setShowSecondFloor={setShowSecondFloor}
-            />
-          </TransformWrapper>
-        )}
-      </div>
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Owner Name</TableHead>
-            <TableHead>Business Type</TableHead>
-            <TableHead>Stall Number</TableHead>
-            <TableHead>Payment Status</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.isArray(stalls) && stalls.length > 0 ? (
-            stalls.map((stall, index) => (
-              <TableRow key={index}>
-                <TableCell>{stall.name}</TableCell>
-                <TableCell>{stall.business_type}</TableCell>
-                <TableCell>{stall.stall_no}</TableCell>
-                <TableCell>payment type</TableCell>
-                <TableCell>
-                  <Dialog>
-                    <DialogTrigger>View</DialogTrigger>
-                    <DialogContent className="w-[40%]">
-                      <DialogHeader>
-                        <DialogTitle>{stall.business_name}</DialogTitle>
-                        <DialogDescription>
-                          {stall.name} is a business owner of{' '}
-                          {stall.business_type} and has a stall number of{' '}
-                          {stall.stall_no}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div>
-                        <Label>Owner</Label>
-                        <h1>{stall.name}</h1>
-                      </div>
-
-                      <div>
-                        <Label>Date of Birth</Label>
-                        <h1>{stall.date_birth}</h1>
-                      </div>
-
-                      <div>
-                        <Label>Gender</Label>
-                        <h1>{stall.gender}</h1>
-                      </div>
-
-                      <div>
-                        <Label>Address</Label>
-                        <h1>{stall.address}</h1>
-                      </div>
-
-                      <div>
-                        <Label>Nationality</Label>
-                        <h1>{stall.nationality}</h1>
-                      </div>
-
-                      <div>
-                        <div>
-                          <Label>Business Type</Label>
-                          <h1>{stall.business_type}</h1>
-                        </div>
-
-                        <div>
-                          <Label>Contact Information</Label>
-                          <h1>{stall.phone}</h1>
-                          <h1>{stall.email}</h1>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label>Rental Info</Label>
-                        <h1>{stall.lease_duration}</h1>
-                      </div>
-                      <div>
-                        <Label>Expiration</Label>
-                        <h1>
-                          {(() => {
-                            const createdDate = new Date(stall.created_at);
-
-                            switch (stall.lease_duration) {
-                              case '1 month':
-                                createdDate.setMonth(
-                                  createdDate.getMonth() + 1,
-                                );
-                                break;
-                              case '3 months':
-                                createdDate.setMonth(
-                                  createdDate.getMonth() + 3,
-                                );
-                                break;
-                              case '6 months':
-                                createdDate.setMonth(
-                                  createdDate.getMonth() + 6,
-                                );
-                                break;
-                              case '1 year':
-                              default:
-                                createdDate.setFullYear(
-                                  createdDate.getFullYear() + 1,
-                                );
-                                break;
-                            }
-
-                            return createdDate.toLocaleDateString();
-                          })()}
-                        </h1>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div>
-                          <Label>Signed Lease Agreement</Label>
-                          <img
-                            className="w-40 h-40 object-cover"
-                            src={`${import.meta.env.VITE_SERVER_LINK}/api/${
-                              stall.signed_lease_path
-                            }`}
-                            alt="signed lease"
-                          />
-                        </div>
-
-                        <div>
-                          <Label>ID Proof</Label>
-                          <img
-                            className="w-40 h-40 object-cover"
-                            src={`${import.meta.env.VITE_SERVER_LINK}/api/${
-                              stall.id_proof_path
-                            }`}
-                            alt="ID Proof"
-                          />
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={5}>No data available</TableCell>
-            </TableRow>
+              </TransformComponent>
+              <Controls
+                showSecondFloor={showSecondFloor}
+                setShowSecondFloor={setShowSecondFloor}
+              />
+            </TransformWrapper>
           )}
-        </TableBody>
-      </Table>
+        </div>
+
+        <div className="w-full  h-[700px]">
+          <div className="flex justify-between w-full mb-4 h-[3rem]">
+            <h1 className="text-start font-semibold text-2xl">
+              LIST OF TENANTS{' '}
+            </h1>
+
+            <Input
+              className="w-[40%] bg-white h-full"
+              placeholder="Search"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-center">Owner Name</TableHead>
+                <TableHead className="text-center">Business Type</TableHead>
+                <TableHead className="text-center">Stall Number</TableHead>
+                <TableHead className="text-center">Payment Status</TableHead>
+                <TableHead className="text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.isArray(stalls) && stalls.length > 0 ? (
+                currentItems.map((stall, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{stall.name}</TableCell>
+                    <TableCell>{stall.business_type}</TableCell>
+                    <TableCell>{stall.stall_no}</TableCell>
+                    <TableCell>
+                      {' '}
+                      {stall.payment_status.toLowerCase() === 'unpaid' ? (
+                        <span className="bg-yellow-500 text-white p-2 rounded-sm">
+                          {stall.payment_status}
+                        </span>
+                      ) : stall.payment_status.toLowerCase() === 'overdue' ? (
+                        <span className="bg-red-500 text-white p-2 rounded-sm">
+                          {stall.payment_status}
+                        </span>
+                      ) : stall.total_amount_to_pay === 0 ? (
+                        <span className="bg-green-500 text-white p-2 rounded-sm">
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="bg-blue-500 text-white p-2 rounded-sm">
+                          {stall.payment_status}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <ViewDialog stall={stall} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5}>No data available</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          <PaginationTemplate
+            totalPages={totalPages}
+            currentPage={currentPage}
+            handlePageChange={handlePageChange}
+          />
+        </div>
+      </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
@@ -640,7 +610,7 @@ const Dashboard = () => {
                         // onChange={(e) => setTotalPayment(+e.target.value)}
                         value={
                           selectedLeaseDuration.length > 0
-                            ? selectedLeaseDuration === '3 month'
+                            ? selectedLeaseDuration === '3 months'
                               ? 8000 * 3
                               : selectedLeaseDuration === '6 months'
                               ? 8000 * 6
@@ -694,6 +664,28 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      <div className="fixed top-5 right-5 flex flex-col gap-2 p-4 rounded-lg w-fit">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-green-500 rounded"></div>
+          <span className="text-sm text-gray-600">Available</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-yellow-400 rounded"></div>
+          <span className="text-sm text-gray-600">Upcoming</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-red-500 rounded"></div>
+          <span className="text-sm text-gray-600">Overdue</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-blue-500 rounded"></div>
+          <span className="text-sm text-gray-600">Occupied</span>
+        </div>
+      </div>
     </div>
   );
 };

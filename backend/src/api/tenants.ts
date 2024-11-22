@@ -39,25 +39,40 @@ router.get('/', (req, res) => {
 
 router.get('/payments', (req, res) => {
   const query = `
-      SELECT 
-          tenants.*,
-          payments_log.current_balance
-      FROM 
-          tenants
-      LEFT JOIN (
-          SELECT 
-              tenants_id, 
-              MAX(created_at) AS latest_payment_date
-          FROM 
-              payments_log
-          GROUP BY 
-              tenants_id
-      ) latest_payment 
-      ON tenants.tenants_id = latest_payment.tenants_id
-      LEFT JOIN payments_log 
-      ON payments_log.tenants_id = latest_payment.tenants_id 
-      AND payments_log.created_at = latest_payment.latest_payment_date GROUP BY 
-    tenants.tenants_id;
+    SELECT 
+    tenants.*,
+    COALESCE(SUM(payments_log.amount_pay), 0) AS current_total_payments,
+    -- Total lease amount calculation based on duration
+    CASE
+        WHEN tenants.lease_duration = '3 months' THEN 24000
+        WHEN tenants.lease_duration = '6 months' THEN 48000
+        WHEN tenants.lease_duration = '9 months' THEN 72000
+        WHEN tenants.lease_duration = '1 year' THEN 96000
+        ELSE 0
+    END AS total_amount,
+    -- Current balance calculation
+    CASE
+        WHEN tenants.lease_duration = '3 months' THEN 24000
+        WHEN tenants.lease_duration = '6 months' THEN 48000
+        WHEN tenants.lease_duration = '9 months' THEN 72000
+        WHEN tenants.lease_duration = '1 year' THEN 96000
+        ELSE 0
+    END - COALESCE(SUM(payments_log.amount_pay), 0) AS total_amount_to_pay
+FROM 
+    tenants
+LEFT JOIN 
+    payments_log 
+ON 
+    tenants.tenants_id = payments_log.tenants_id
+    AND payments_log.created_at >= tenants.created_at 
+GROUP BY 
+    tenants.tenants_id, 
+    tenants.name, 
+    tenants.created_at, 
+    tenants.lease_duration, 
+    tenants.business_name, 
+    tenants.stall_no;
+
       `;
 
   databaseConnection.query(query, (err, data) => {
@@ -105,6 +120,7 @@ router.post(
       ? path.join('uploads', files['signed_lease_path'][0].filename)
       : 'uploads/default_signed_lease.jpeg';
 
+    const paymentStatus = 'Unpaid';
     // Database query for inserting tenant information
     const query = `
         INSERT INTO tenants (
@@ -121,7 +137,8 @@ router.post(
           id_proof_path, 
           signed_lease_path, 
           created_at, 
-          stall_no
+          stall_no,
+          payment_status
         ) 
         VALUES (?);
       `;
@@ -141,6 +158,7 @@ router.post(
       signedLeasePath,
       new Date(),
       req.body.stall_no,
+      paymentStatus,
     ];
 
     databaseConnection.query(query, [values], (err, data) => {
