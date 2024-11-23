@@ -38,6 +38,7 @@ import PathContainer from '@/components/PathContainer';
 import ViewDialog from '@/components/ViewDialog';
 import usePagination from '@/hooks/usePagination';
 import { StallsTypes, TenantsDataTypes } from '@/types';
+import RemoveDialog from '@/components/payments/RemoveDialog';
 
 type InputType =
   | React.ChangeEvent<HTMLInputElement>
@@ -424,8 +425,9 @@ const Dashboard = () => {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="gap-2 flex">
                       <ViewDialog stall={stall} />
+                      <RemoveDialog fetchStalls={fetchStalls} stall={stall} />
                     </TableCell>
                   </TableRow>
                 ))

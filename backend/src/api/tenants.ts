@@ -255,14 +255,4 @@ router.delete('/delete/:id', (req, res) => {
   });
 });
 
-// Get tenant by scan (tenant ID code)
-router.get('/scan/:id', (req, res) => {
-  const query = 'SELECT * FROM tenants WHERE tenants_id_code = ?';
-  const id = req.params.id;
-  databaseConnection.query(query, [id], (err, data) => {
-    if (err) return res.json(err);
-    return res.json(data);
-  });
-});
-
 export const tenantRouter = router;
