@@ -128,7 +128,7 @@ const Payment = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Tenants ID</TableHead>
+            <TableHead>Stall No.</TableHead>
             <TableHead>Owner Name</TableHead>
             <TableHead>Start</TableHead>
             <TableHead>Expiration</TableHead>
@@ -144,7 +144,7 @@ const Payment = () => {
           {Array.isArray(stalls) && stalls.length > 0 ? (
             currentItems.map((stall, index) => (
               <TableRow key={index}>
-                <TableCell>{stall.tenants_id}</TableCell>
+                <TableCell>{stall.stall_no}</TableCell>
 
                 <TableCell>{stall.name}</TableCell>
                 <TableCell>{moment(stall.created_at).format('LL')}</TableCell>

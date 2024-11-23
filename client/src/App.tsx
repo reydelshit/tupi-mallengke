@@ -15,7 +15,9 @@ function App() {
       <div className="w-full text-center h-full">
         <div className="flex gap-4 w-full border-2 h-full">
           <div className="w-[16rem] bg-[#272626] text-[#fff6f2] h-screen fixed inset-0 flex flex-col text-start p-8">
-            <h1 className="font-bold italic text-3xl">TUPI MALLENGKE </h1>
+            <Link className="font-semibold" to="/">
+              <h1 className="font-bold italic text-3xl">TUPI MALLENGKE </h1>
+            </Link>
             <div className="flex flex-col mt-[2rem] text-xl">
               <Link className="font-semibold" to="/">
                 Dashboard
