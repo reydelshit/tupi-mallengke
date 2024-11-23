@@ -14,8 +14,30 @@ import { StallsTypes } from '@/types';
 import { Label } from '@radix-ui/react-label';
 import { SendHorizontal } from 'lucide-react';
 import moment from 'moment';
+import { Input } from '../ui/input';
+import { useState } from 'react';
+import useSendSMS from '@/hooks/useSendSMS';
 
 const SendSMSDialog = ({ stall }: { stall: StallsTypes }) => {
+  const [message, setMessage] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [error, setError] = useState('');
+
+  const { sendSMS } = useSendSMS();
+  const handleSendSMS = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!message || !phoneNumber) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    sendSMS({
+      content: message,
+      to: phoneNumber,
+    });
+  };
+
   return (
     <Dialog>
       <DialogTrigger>
@@ -33,7 +55,7 @@ const SendSMSDialog = ({ stall }: { stall: StallsTypes }) => {
           <DialogDescription>Owner Name: {stall.name}</DialogDescription>
         </DialogHeader>
 
-        <form>
+        <form onSubmit={handleSendSMS}>
           <div className="w-full space-y-6 p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Start Date Section */}
@@ -99,10 +121,21 @@ const SendSMSDialog = ({ stall }: { stall: StallsTypes }) => {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-600">Phone Number</Label>
+              <Input
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                type="number"
+                placeholder="Enter phone number"
+                defaultValue={stall.phone}
+              />
+            </div>
+
             {/* Message Section */}
             <div className="space-y-2">
               <Label className="text-sm text-gray-600">Message</Label>
               <Textarea
+                onChange={(e) => setMessage(e.target.value)}
                 className="min-h-[250px] w-full resize-none border-gray-200 focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your message here..."
               />
