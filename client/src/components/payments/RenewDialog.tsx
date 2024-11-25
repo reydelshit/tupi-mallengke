@@ -35,8 +35,10 @@ const RenewDialog = ({
   return (
     <Dialog>
       <DialogTrigger
-        className="cursor-not-allowed"
-        disabled={stall.current_total_payments === 0 ? false : true}
+        className={`${
+          stall.total_amount_to_pay !== 0 && 'cursor-not-allowed'
+        } "`}
+        disabled={stall.total_amount_to_pay === 0 ? false : true}
       >
         Renew
       </DialogTrigger>

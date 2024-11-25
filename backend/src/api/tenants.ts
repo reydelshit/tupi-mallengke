@@ -72,7 +72,6 @@ GROUP BY
     tenants.lease_duration, 
     tenants.business_name, 
     tenants.stall_no;
-
       `;
 
   databaseConnection.query(query, (err, data) => {
@@ -143,6 +142,10 @@ router.post(
         VALUES (?);
       `;
 
+    const createdAtWithTime = new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace('T', ' ');
     const values = [
       req.body.name,
       req.body.date_birth,
@@ -156,7 +159,7 @@ router.post(
       req.body.lease_duration,
       idProofPath,
       signedLeasePath,
-      new Date(),
+      createdAtWithTime,
       req.body.stall_no,
       paymentStatus,
     ];

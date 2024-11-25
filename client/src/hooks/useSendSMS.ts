@@ -1,3 +1,5 @@
+import { toast } from './use-toast';
+
 const apiKey = `${import.meta.env.VITE_SMS_API_KEY}`;
 
 const useSendSMS = () => {
@@ -13,7 +15,6 @@ const useSendSMS = () => {
   }) => {
     console.log('Sending SMS with content:', content, 'to:', to);
 
-    // Validate content and recipient
     if (!content || !to) {
       console.error('Content or recipient number is not set.');
       return;
@@ -29,7 +30,7 @@ const useSendSMS = () => {
         },
         body: JSON.stringify({
           content,
-          from: '+639097134971',
+          from: '+639063093543',
           to: `+${to}`,
         }),
       });
@@ -43,6 +44,11 @@ const useSendSMS = () => {
 
       const data = await response.json();
       console.log('SMS sent successfully:', data);
+
+      toast({
+        title: 'SMS Sent',
+        description: 'The SMS has been sent successfully',
+      });
     } catch (err) {
       console.error('Failed to send SMS:', err);
     }

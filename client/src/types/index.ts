@@ -21,4 +21,5 @@ export interface StallsTypes extends TenantsDataTypes {
   total_amount_to_pay: number;
   current_total_payments: number;
   total_amount: number;
+  renewal_counter: number;
 }

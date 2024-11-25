@@ -38,11 +38,16 @@ router.post('/create', (req, res) => {
     VALUES (?);
   `;
 
+  const createdAtWithTime = new Date()
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+
   const values = [
     req.body.current_balance,
     req.body.amount_pay,
     req.body.tenants_id,
-    new Date(),
+    createdAtWithTime,
   ];
 
   databaseConnection.query(query, [values], (err, data) => {

@@ -16,6 +16,7 @@ import { Label } from '@radix-ui/react-label';
 import axios from 'axios';
 import moment from 'moment';
 import { useState } from 'react';
+import { usePrintPDF } from '../PrintPDF';
 const PayDialog = ({
   stall,
   fetchStalls,
@@ -26,6 +27,7 @@ const PayDialog = ({
   const [totalPayment, setTotalPayment] = useState<number>(0);
   const [currentAmountBalance, setCurrentAmountBalance] = useState<number>(0);
   const [tenantID, setTenantID] = useState<number>(0);
+  const generatePDF = usePrintPDF<Record<string, string>>();
 
   const handleAddPayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,6 +44,24 @@ const PayDialog = ({
       toast({
         title: 'Payment added successfully',
         description: 'You have successfully added a payment',
+      });
+
+      const paymentPrintDetails: Record<string, string> = {
+        businessName: stall.business_name,
+        owner: stall.name,
+        amount: totalPayment.toString(),
+        currentBalance: currentAmountBalance.toString(),
+      };
+
+      generatePDF({
+        data: paymentPrintDetails,
+        fileName: stall.business_name + '_payment_receipt',
+        title: 'Payment Receipt',
+        subtitle: 'TUPI MALLENGKE',
+        footer: [
+          'This is a computer-generated document and it does not require a signature.',
+          'This document is valid without an authorized signature.',
+        ],
       });
 
       fetchStalls();

@@ -33,6 +33,7 @@ interface PaymentHistory {
 }
 const ViewDialog = ({ stall }: { stall: StallsTypes }) => {
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
+
   const handleFetchPaymentHistory = async () => {
     try {
       const res = await axios.get(
@@ -59,7 +60,10 @@ const ViewDialog = ({ stall }: { stall: StallsTypes }) => {
   return (
     <Dialog>
       <DialogTrigger>
-        <Button className="bg-yellow-500 hover:bg-yellow-400">
+        <Button
+          onClick={() => handleFetchPaymentHistory()}
+          className="bg-yellow-500 hover:bg-yellow-400"
+        >
           {' '}
           <History size={15} /> View
         </Button>
@@ -229,9 +233,14 @@ const ViewDialog = ({ stall }: { stall: StallsTypes }) => {
             <div className="flex w-full justify-between items-center my-4">
               <h1 className="font-semibold text-2xl">Payment History</h1>
 
-              <p className="text-sm">
-                Only shows 10 per page. Click the page number to view more.
-              </p>
+              <div>
+                <h1 className="font-bold">
+                  RENEWAL COUNTER : {stall.renewal_counter}
+                </h1>
+                <p className="text-sm">
+                  Only shows 10 per page. Click the page number to view more.
+                </p>
+              </div>
             </div>
             <Table>
               <TableCaption>A list of payment history.</TableCaption>
@@ -258,7 +267,7 @@ const ViewDialog = ({ stall }: { stall: StallsTypes }) => {
                           <span className="text-red-600">Pending</span>
                         )}
                       </TableCell> */}
-                      <TableCell>Credit Card</TableCell>
+                      <TableCell>CASH</TableCell>
                       <TableCell className="text-right">
                         ₱{payment.amount_pay}
                       </TableCell>

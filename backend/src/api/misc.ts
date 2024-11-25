@@ -30,6 +30,11 @@ router.put('/update/:id', (req, res) => {
     `Received request to update tenant ID: ${id}, with lease duration: ${lease_duration}`,
   );
 
+  const createdAtWithTime = new Date()
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+
   const query = `
       UPDATE tenants
       SET 
@@ -39,7 +44,7 @@ router.put('/update/:id', (req, res) => {
       WHERE tenants_id = ?;
     `;
 
-  const values = [lease_duration, new Date(), id];
+  const values = [lease_duration, createdAtWithTime, id];
 
   databaseConnection.query(query, values, (err, data: any) => {
     if (err) {

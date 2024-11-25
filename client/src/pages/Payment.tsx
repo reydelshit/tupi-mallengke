@@ -18,20 +18,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+import { ExportToPDF } from '@/components/ExportToPDF';
+import PaginationTemplate from '@/components/Pagination';
 import MarkOverdueDialog from '@/components/payments/MarkOverdueDialog';
 import PayDialog from '@/components/payments/PayDialog';
-import RemoveDialog from '@/components/payments/RemoveDialog';
 import RenewDialog from '@/components/payments/RenewDialog';
 import SendSMSDialog from '@/components/payments/SendSMSDialog';
+import { Input } from '@/components/ui/input';
+import ViewDialog from '@/components/ViewDialog';
+import usePagination from '@/hooks/usePagination';
+import { StallsTypes } from '@/types';
 import axios from 'axios';
 import moment from 'moment';
-import usePagination from '@/hooks/usePagination';
-import { Input } from '@/components/ui/input';
-import PaginationTemplate from '@/components/Pagination';
-import { ExportToPDF } from '@/components/ExportToPDF';
-import { StallsTypes } from '@/types';
-import { History, SendHorizontal } from 'lucide-react';
-import ViewDialog from '@/components/ViewDialog';
 
 const Payment = () => {
   const [stalls, setStalls] = useState<StallsTypes[]>([]);
